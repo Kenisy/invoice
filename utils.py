@@ -91,7 +91,6 @@ def box_extraction(image):
             0.7, (0, 0, 255), 2)
             bounding_boxes.append((x, y, w, h))
     cv2.imwrite(PREPROCESS_PATH + "img_boxes.jpg", origin)
-    print(idx)
     return bounding_boxes
 
 def preprocess_img(img):
@@ -121,17 +120,16 @@ def get_data_from_img(image):
 
 def is_row_item_header(row, img):
     keywords_found = 0
+    row_text = [get_text_from_box(img, box).lower() for box in row]
     for keyword in constant.TABLE_HEADERS:
-        if any([keyword in get_text_from_box(img, box).lower() for box in row]):
+        if any([keyword in t for t in row_text]):
             keywords_found += 1
     if keywords_found > 1:
-        return True, []
+        return True, row_text
     return False, []
 
 
 def is_row_belong_to_header(row, header_row):
-    print(row)
-    print(header_row)
     if len(row) != len(header_row):
         return False
     if all(
@@ -204,18 +202,15 @@ def extract_from_text(text, exporter_found, consignee_found):
         header = 'EXPOTER'
         content = text[idx+1:].strip()
         exporter_found = True
-        print(f'exporter: {text}')
     elif consignee_found == False and any([h in text[:idx].lower() for h in constant.CONSIGNEE_HEADERS]):
         header = 'CONSIGNEE'
         content = text[idx+1:].strip()
         consignee_found = True
-        print(f'consignee: {text}')
     return header, content, exporter_found, consignee_found
 
-def get_item_table(bounding_boxes, img):
+def get_invoice_data(bounding_boxes, img):
     invoice = {}
     current_row = []
-    current_row_text = []
     header_row = []
     header_texts = []
     item_rows = []
@@ -227,9 +222,9 @@ def get_item_table(bounding_boxes, img):
     for i in range(len(bounding_boxes) - 1):
         box = bounding_boxes[i]
         next_box = bounding_boxes[i + 1]
-        box_text = get_text_from_box(img, box)
-        bounding_box_texts[i] = box_text
         if exporter_found == False or consignee_found == False:
+            box_text = get_text_from_box(img, box)
+            bounding_box_texts[i] = box_text
             header, content, exporter_found, consignee_found = extract_from_text(box_text, exporter_found, consignee_found)
             if header != '' and content != '':
                 invoice[header] = content
@@ -246,7 +241,6 @@ def get_item_table(bounding_boxes, img):
         if abs(box[1] - next_box[1]) < 5 and abs(box[3] - next_box[3]) < 5:
             if len(current_row) == 0:
                 current_row.append(box)
-                current_row_text.append(box_text)
             current_row.append(next_box)
         else:
             # print(current_row)
@@ -268,7 +262,7 @@ def get_item_table(bounding_boxes, img):
         items = {}
         if len(item_rows) == 1:
             item_rows = split_row(item_rows[0], img)
-        print(item_rows)
+        # print(item_rows)
 
         for idx, item_row in enumerate(item_rows):
             item_detail = {}
@@ -276,7 +270,7 @@ def get_item_table(bounding_boxes, img):
                 item_row = split_col(item_row[0], header_row)
             print(f"{item_row}")
             for i in range(len(header_row)):
-                header_text = get_text_from_box(img, header_row[i])
+                header_text = header_texts[i]
                 item_text = get_text_from_box(img, item_row[i])
                 item_detail[get_header_text(header_text)] = item_text
                 items[f"item_{idx}"] = item_detail
