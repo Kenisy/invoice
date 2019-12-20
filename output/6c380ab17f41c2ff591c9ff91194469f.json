@@ -1,0 +1,27 @@
+{
+    "EXPOTER": "The Electric Shop\n\n1 Plate Street\nBrisbane, QLD, 4300\nAustralia",
+    "CONSIGNEE": "The SwitchGear CO. LTD\nXiao Dong Shan Xiamen\nFujian, 361006\n\nChina",
+    "ITEMS": {
+        "item_0": {
+            "Product Code": "2216",
+            "Description of Goods": "Lightbulb 2 x 37 watt",
+            "Unit Quantity": "1000",
+            "Pie": "4.00",
+            "Amount": "4000.00"
+        },
+        "item_1": {
+            "Product Code": "2218",
+            "Description of Goods": "Elecwire 20m",
+            "Unit Quantity": "450",
+            "Pie": "28.00",
+            "Amount": "12600.00"
+        },
+        "item_2": {
+            "Product Code": "2226",
+            "Description of Goods": "Cable wire 40m",
+            "Unit Quantity": "70",
+            "Pie": "482.00",
+            "Amount": "33740.00"
+        }
+    }
+}
