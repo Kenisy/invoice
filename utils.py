@@ -195,18 +195,66 @@ def split_col(item_row, header_row):
         cols.append((x, y, w, h))
     return cols
 
+def extract_from_content(content):
+    fields = {}
+    field = ''
+    value = ''
+    general_field = False
+    field_name = ''
+    lines = content.splitlines()
+    lines = [s for s in lines if s]
+    for line in lines:
+        idx = line.find(':')
+        if(idx > 0):
+            if(field != ''):
+                fields[field] = value.strip()
+            parts = line.split(':')
+            field = line[:idx]
+            value = line[idx+1:]
+        elif(field != ''):
+            value += f'\n{line.strip()}'
+        else:
+            general_field = True
+            field = 'general'
+            value = line.strip()
+    if(field != ''):
+        fields[field] = value.strip()
+    if(field_name != ''):
+        result = {}
+        result[field_name] = fields
+        return result
+    return fields
+
 def extract_from_text(text, exporter_found, consignee_found):
     header, content = '', ''
     idx = text.find('\n')
     if exporter_found == False and any([h in text[:idx].lower() for h in constant.EXPORTER_HEADERS]):
         header = 'EXPOTER'
-        content = text[idx+1:].strip()
+        content = extract_from_content(text[idx+1:])
         exporter_found = True
     elif consignee_found == False and any([h in text[:idx].lower() for h in constant.CONSIGNEE_HEADERS]):
         header = 'CONSIGNEE'
-        content = text[idx+1:].strip()
+        content = extract_from_content(text[idx+1:])
         consignee_found = True
     return header, content, exporter_found, consignee_found
+
+def get_item(item_rows, header_row, header_texts, img):
+    items = {}
+    if len(item_rows) == 1:
+        item_rows = split_row(item_rows[0], img)
+    # print(item_rows)
+
+    for idx, item_row in enumerate(item_rows):
+        item_detail = {}
+        if len(item_row) == 1:
+            item_row = split_col(item_row[0], header_row)
+        print(f"{item_row}")
+        for i in range(len(header_row)):
+            header_text = header_texts[i]
+            item_text = get_text_from_box(img, item_row[i])
+            item_detail[get_header_text(header_text)] = item_text
+            items[f"item_{idx}"] = item_detail
+    return items
 
 def get_invoice_data(bounding_boxes, img):
     invoice = {}
@@ -259,23 +307,6 @@ def get_invoice_data(bounding_boxes, img):
             current_row = []
 
     if header_row_found and items_row_found:
-        items = {}
-        if len(item_rows) == 1:
-            item_rows = split_row(item_rows[0], img)
-        # print(item_rows)
-
-        for idx, item_row in enumerate(item_rows):
-            item_detail = {}
-            if len(item_row) == 1:
-                item_row = split_col(item_row[0], header_row)
-            print(f"{item_row}")
-            for i in range(len(header_row)):
-                header_text = header_texts[i]
-                item_text = get_text_from_box(img, item_row[i])
-                item_detail[get_header_text(header_text)] = item_text
-                items[f"item_{idx}"] = item_detail
-
-        invoice["ITEMS"] = items
-        return invoice
+        invoice["ITEMS"] = get_item(item_rows, header_row, header_texts, img)
 
     return invoice

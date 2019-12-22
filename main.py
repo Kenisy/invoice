@@ -5,7 +5,7 @@ import json
 import constant
 
 if __name__ == "__main__":  
-    imgurl = 'input\\Alter-DHL-Express-Commercial-Invoice-Title-Sample-Commercial-Invoice.png'
+    imgurl = 'input\\6c380ab17f41c2ff591c9ff91194469f.png'
     img = cv2.imread(imgurl)
     img = utils.preprocess_img(img)
 
