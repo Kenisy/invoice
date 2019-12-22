@@ -84,7 +84,7 @@ def box_extraction(image):
         # Returns the location and width,height for every contour
         x, y, w, h = cv2.boundingRect(c)
         # If the box height is greater then 20, widht is >80, then only save it as a box in "cropped/" folder.
-        if (w > img.shape[1] / 20 and h > img.shape[0] / 100 and h < img.shape[0] * 0.8):
+        if (w > img.shape[1] / 50 and h > img.shape[0] / 100 and h < img.shape[0] * 0.8):
             idx += 1
             origin = cv2.rectangle(origin, (x, y), (x+w, y+h), (0, 0, 255), 1)
             origin = cv2.putText(origin, "#{}".format(idx-1), (x-10, y-10), cv2.FONT_HERSHEY_SIMPLEX,
@@ -165,6 +165,7 @@ def split_row(item_row, img):
     x, y, w, h = item_row[0]
     data = get_data_from_img(img[y : y + h, x : x + w])
     nlines = data["line_num"].max()
+    print(item_row)
     item_rows = []
     # print(f"nlines: {nlines}")
     if nlines > 1:
