@@ -93,6 +93,7 @@ def box_extraction(image):
     cv2.imwrite(PREPROCESS_PATH + "img_boxes.jpg", origin)
     return bounding_boxes
 
+# preprocess image before reading text (grayscale and zoom in)
 def preprocess_img(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = cv2.resize(img, None, fx=2, fy=2, interpolation=cv2.INTER_LANCZOS4)
@@ -101,23 +102,23 @@ def preprocess_img(img):
     # img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
     return img
 
+# get text from image
 def get_text_from_img(img, preprocess=True, lang='eng', psm=6):
-    # if preprocess:
-    #   img = preprocess_img(img)
     config = (f'-l {lang} --oem 1 --psm {psm}')
     text = pytesseract.image_to_string(img, config=config)
     return text
 
+# get text from image in the box region
 def get_text_from_box(img, box, preprocess=True):
     return get_text_from_img(img[box[1]:box[1]+box[3], box[0]:box[0]+box[2]], preprocess=preprocess)
 
+# get text data from image (position, lines, probability, ...)
 def get_data_from_img(image):
-    # image = preprocess_img(image)
-    # image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     config = (f'-l eng --oem 1 --psm 6')
     data = pytesseract.image_to_data(image, config=config, output_type=pytesseract.Output.DATAFRAME)
     return data
 
+# check if row of boxes is the item table header
 def is_row_item_header(row, img):
     keywords_found = 0
     row_text = [get_text_from_box(img, box).lower() for box in row]
@@ -128,7 +129,7 @@ def is_row_item_header(row, img):
         return True, row_text
     return False, []
 
-
+# check if row of boxes is belong to item table
 def is_row_belong_to_header(row, header_row):
     if len(row) != len(header_row):
         return False
@@ -142,7 +143,7 @@ def is_row_belong_to_header(row, header_row):
         return True
     return False
 
-
+# check if box is belong to item table header
 def is_box_belong_to_header(box, header_row):
     x_first, y_first, w_first, h_first = header_row[0]
     x_last, y_last, w_last, h_last = header_row[-1]
@@ -153,19 +154,19 @@ def is_box_belong_to_header(box, header_row):
         return True
     return False
 
-
+# get header text (strip out new line0)
 def get_header_text(text):
     text = text.replace("\n", " ")
     text.strip()
     return text
 
-
+# split each row item of item table
 def split_row(item_row, img):
     x, y, w, h = item_row[0]
     data = get_data_from_img(img[y : y + h, x : x + w])
     nlines = data["line_num"].max()
     item_rows = []
-    print(f"nlines: {nlines}")
+    # print(f"nlines: {nlines}")
     if nlines > 1:
         prev_y = y
         for i in range(2, nlines + 1):
@@ -186,7 +187,7 @@ def split_row(item_row, img):
     else:
         return [item_row]
 
-
+# split each column item of item table
 def split_col(item_row, header_row):
     cols = []
     _, y, _, h = item_row
@@ -195,6 +196,7 @@ def split_col(item_row, header_row):
         cols.append((x, y, w, h))
     return cols
 
+# get json data from text base on human rule
 def extract_from_content(content):
     fields = {}
     field = ''
@@ -225,6 +227,7 @@ def extract_from_content(content):
         return result
     return fields
 
+# get json exporter and consignee from text base on human rule
 def extract_from_text(text, exporter_found, consignee_found):
     header, content = '', ''
     idx = text.find('\n')
@@ -238,6 +241,7 @@ def extract_from_text(text, exporter_found, consignee_found):
         consignee_found = True
     return header, content, exporter_found, consignee_found
 
+# get json of items from item tables
 def get_item(item_rows, header_row, header_texts, img):
     items = {}
     if len(item_rows) == 1:
@@ -248,7 +252,7 @@ def get_item(item_rows, header_row, header_texts, img):
         item_detail = {}
         if len(item_row) == 1:
             item_row = split_col(item_row[0], header_row)
-        print(f"{item_row}")
+        # print(f"{item_row}")
         for i in range(len(header_row)):
             header_text = header_texts[i]
             item_text = get_text_from_box(img, item_row[i])
@@ -256,6 +260,7 @@ def get_item(item_rows, header_row, header_texts, img):
             items[f"item_{idx}"] = item_detail
     return items
 
+# get json of whole invoice
 def get_invoice_data(bounding_boxes, img):
     invoice = {}
     current_row = []
